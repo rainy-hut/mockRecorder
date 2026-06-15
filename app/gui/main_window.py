@@ -1,6 +1,7 @@
 import logging
 import sys
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QFrame, QLabel, QListWidget, QMainWindow, QMessageBox, QStackedWidget, QHBoxLayout, QVBoxLayout, QWidget
 
 from app.config.config_manager import ConfigManager
@@ -11,7 +12,7 @@ from app.gui.dashboard_page import DashboardPage
 from app.gui.log_page import LogPage
 from app.gui.record_browser_page import RecordBrowserPage
 from app.gui.setup_page import SetupPage
-from app.paths import get_config_path, get_database_path
+from app.paths import get_config_path, get_database_path, resource_path
 from app.proxy.context_control_server import ContextControlServer
 from app.proxy.proxy_manager import ProxyManager
 from app.proxy.replay_engine import ReplayEngine
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        app_icon = load_app_icon()
+        self.setWindowIcon(app_icon)
+        if QApplication.instance():
+            QApplication.instance().setWindowIcon(app_icon)
         self.log_path = configure_logging()
         self.config_manager = ConfigManager(get_config_path())
         self.app_config = self.config_manager.load()
@@ -219,10 +224,15 @@ class MainWindow(QMainWindow):
 
 def run_app() -> None:
     app = QApplication(sys.argv)
+    app.setWindowIcon(load_app_icon())
     app.setStyleSheet(_app_stylesheet())
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+
+def load_app_icon() -> QIcon:
+    return QIcon(str(resource_path("app/assets/app_icon.svg")))
 
 
 def _app_stylesheet() -> str:
