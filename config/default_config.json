@@ -1,0 +1,67 @@
+{
+  "mode": "OFF",
+  "databasePath": "data/recorder.db",
+  "controlHost": "127.0.0.1",
+  "controlPort": 16000,
+  "socketReadTimeoutMs": 3000,
+  "queryResponseTimeoutMs": 3000,
+  "nonQueryResponseTimeoutMs": 100,
+  "appendNewLineWhenReplay": true,
+  "currentProfile": "default",
+  "currentTestItemCode": "DEFAULT_TEST",
+  "currentVariant": "normal",
+  "currentProduct": "MM",
+  "currentProcessStation": "FT1-MP1",
+  "currentProductCode": "03020001",
+  "currentTuName": "UNSET",
+  "instruments": [
+    {
+      "alias": "SA_01",
+      "type": "SpectrumAnalyzer",
+      "protocol": "SOCKET_SCPI_LINE",
+      "payloadFormat": "TEXT",
+      "proxyHost": "127.0.0.1",
+      "proxyPort": 15026,
+      "realHost": "192.168.1.20",
+      "realPort": 5025,
+      "visaResource": "",
+      "enabled": true
+    },
+    {
+      "alias": "MODBUS_01",
+      "type": "PowerController",
+      "protocol": "SOCKET_RAW",
+      "payloadFormat": "HEX_TEXT",
+      "proxyHost": "127.0.0.1",
+      "proxyPort": 15027,
+      "realHost": "192.168.1.30",
+      "realPort": 4001,
+      "visaResource": "",
+      "enabled": true
+    },
+    {
+      "alias": "SA_VISA_SOCKET",
+      "type": "SpectrumAnalyzer",
+      "protocol": "VISA_SOCKET",
+      "payloadFormat": "TEXT",
+      "proxyHost": "127.0.0.1",
+      "proxyPort": 15028,
+      "realHost": "192.168.1.40",
+      "realPort": 5025,
+      "visaResource": "TCPIP0::127.0.0.1::15028::SOCKET",
+      "enabled": true
+    },
+    {
+      "alias": "SA_VISA_INSTR_RESERVED",
+      "type": "SpectrumAnalyzer",
+      "protocol": "VISA_INSTR_RESERVED",
+      "payloadFormat": "TEXT",
+      "proxyHost": "127.0.0.1",
+      "proxyPort": 15029,
+      "realHost": "192.168.1.50",
+      "realPort": 5025,
+      "visaResource": "TCPIP0::192.168.1.50::inst0::INSTR",
+      "enabled": false
+    }
+  ]
+}

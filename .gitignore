@@ -1,0 +1,10 @@
+.idea/
+.conda-env/
+.verify-home/
+.pycache/
+.pytest_cache/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec

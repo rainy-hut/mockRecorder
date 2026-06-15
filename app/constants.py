@@ -1,0 +1,37 @@
+class Mode:
+    OFF = "OFF"
+    RECORD = "RECORD"
+    REPLAY = "REPLAY"
+
+    ALL = [OFF, RECORD, REPLAY]
+
+
+class ProtocolType:
+    SOCKET_SCPI_LINE = "SOCKET_SCPI_LINE"
+    SOCKET_RAW = "SOCKET_RAW"
+    VISA_SOCKET = "VISA_SOCKET"
+    VISA_INSTR_RESERVED = "VISA_INSTR_RESERVED"
+
+    ALL = [SOCKET_SCPI_LINE, SOCKET_RAW, VISA_SOCKET, VISA_INSTR_RESERVED]
+
+
+class PayloadFormat:
+    TEXT = "TEXT"
+    HEX_TEXT = "HEX_TEXT"
+    BINARY = "BINARY"
+
+    ALL = [TEXT, HEX_TEXT, BINARY]
+
+
+class ReplayStrategy:
+    BY_CALL_INDEX = "BY_CALL_INDEX"
+    FIRST = "FIRST"
+    LAST = "LAST"
+    ROUND_ROBIN = "ROUND_ROBIN"
+    RANDOM = "RANDOM"
+
+    ALL = [BY_CALL_INDEX, FIRST, LAST, ROUND_ROBIN, RANDOM]
+
+
+APP_NAME = "HardwareMockRecorder"
+DISPLAY_NAME = "Hardware Mock Recorder"
