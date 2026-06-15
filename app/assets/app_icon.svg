@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="chip" x1="72" y1="66" x2="184" y2="178" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EFF6FF"/>
+      <stop offset="1" stop-color="#BFDBFE"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="220" height="220" rx="48" fill="url(#bg)"/>
+  <rect x="70" y="66" width="116" height="116" rx="20" fill="url(#chip)" stroke="#DBEAFE" stroke-width="6"/>
+  <rect x="98" y="94" width="60" height="60" rx="12" fill="#2563EB"/>
+  <path d="M116 111 L146 128 L116 145 Z" fill="#FFFFFF"/>
+  <g stroke="#93C5FD" stroke-width="10" stroke-linecap="round">
+    <path d="M70 98 H48"/>
+    <path d="M70 128 H48"/>
+    <path d="M70 158 H48"/>
+    <path d="M208 98 H186"/>
+    <path d="M208 128 H186"/>
+    <path d="M208 158 H186"/>
+    <path d="M98 66 V44"/>
+    <path d="M128 66 V44"/>
+    <path d="M158 66 V44"/>
+    <path d="M98 204 V182"/>
+    <path d="M128 204 V182"/>
+    <path d="M158 204 V182"/>
+  </g>
+  <path d="M79 205 C106 224 151 226 181 199" fill="none" stroke="#60A5FA" stroke-width="10" stroke-linecap="round"/>
+  <path d="M184 196 L184 222 L160 211 Z" fill="#60A5FA"/>
+</svg>
