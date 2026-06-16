@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtWidgets import QApplication, QFrame, QLabel, QListWidget, QMainWindow, QMessageBox, QStackedWidget, QHBoxLayout, QVBoxLayout, QWidget
 
 from app.config.config_manager import ConfigManager
@@ -68,7 +68,8 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         self.setWindowTitle(DISPLAY_NAME)
-        self.resize(1180, 760)
+        self.resize(1280, 800)
+        self.setMinimumSize(960, 560)
         workspace = QWidget()
         layout = QHBoxLayout(workspace)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -103,6 +104,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(sidebar)
         layout.addWidget(self.stack, 1)
         self.setCentralWidget(workspace)
+
+    def center_on_screen(self) -> None:
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        if not screen:
+            return
+        frame = self.frameGeometry()
+        frame.moveCenter(screen.availableGeometry().center())
+        self.move(frame.topLeft())
 
     def refresh_all(self) -> None:
         self.setup_page.load(self.app_config)
@@ -228,6 +237,7 @@ def run_app() -> None:
     app.setStyleSheet(_app_stylesheet())
     window = MainWindow()
     window.show()
+    window.center_on_screen()
     sys.exit(app.exec())
 
 
@@ -366,13 +376,13 @@ def _app_stylesheet() -> str:
         background: white;
         border: 1px solid #E2E8F0;
         border-radius: 8px;
-        min-height: 180px;
+        min-height: 132px;
     }
     QFrame#ActiveModeCard {
         background: #EFF6FF;
         border: 1px solid #2563EB;
         border-radius: 8px;
-        min-height: 180px;
+        min-height: 132px;
     }
     QLabel#ModeBadge {
         background: #2563EB;

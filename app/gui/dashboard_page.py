@@ -11,7 +11,8 @@ class DashboardPage(QWidget):
         super().__init__()
         self.parent_window = parent
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(14)
 
         title = QLabel("运行控制")
         title.setObjectName("HeroTitle")
@@ -21,6 +22,7 @@ class DashboardPage(QWidget):
         layout.addWidget(subtitle)
 
         mode_cards = QHBoxLayout()
+        mode_cards.setSpacing(14)
         self.mode_cards = {}
         mode_cards.addWidget(self._mode_card(Mode.RECORD, "录制模式", "连接真实仪器，保存测试过程中的交互数据。", lambda: parent.set_mode(Mode.RECORD)))
         mode_cards.addWidget(self._mode_card(Mode.REPLAY, "回放模式", "使用历史数据模拟仪器响应，无需真实硬件。", lambda: parent.set_mode(Mode.REPLAY)))
