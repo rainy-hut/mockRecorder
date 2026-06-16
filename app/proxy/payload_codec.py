@@ -24,7 +24,10 @@ class PayloadCodec:
             return Payload(text, normalized, bytes_to_hex(data), data, sha256_hex(normalized.encode("utf-8")))
         if payload_format == PayloadFormat.HEX_TEXT:
             text = bytes_to_text(data).strip()
-            parsed = parse_hex_text(text)
+            try:
+                parsed = parse_hex_text(text)
+            except ValueError:
+                parsed = data
             hex_text = bytes_to_hex(parsed)
             return Payload(text, hex_text, hex_text, parsed, sha256_hex(parsed))
         text = bytes_to_text(data)

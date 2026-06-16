@@ -74,3 +74,51 @@ def test_replay_prefers_product_station_code_and_tu_name(tmp_path):
     )
     engine = ReplayEngine(repo, ctx)
     assert engine.replay("SA_01", "hash-read") == b"B\n"
+
+
+def test_replay_sends_raw_bytes_without_appending_newline(tmp_path):
+    repo = Repository(Database(tmp_path / "recorder.db"))
+    repo.init_schema()
+    repo.insert_interaction(RecordEvent(
+        profile_name="default",
+        test_item_code="DEFAULT_TEST",
+        instrument_alias="SA_01",
+        instrument_type="SpectrumAnalyzer",
+        protocol=ProtocolType.SOCKET_SCPI_LINE,
+        payload_format=PayloadFormat.TEXT,
+        variant_name="normal",
+        request_text="READ?\n",
+        normalized_request="READ?",
+        request_hex="",
+        request_hash="hash-read",
+        request_bytes=b"READ?\n",
+        response_text="OK",
+        response_bytes=b"OK",
+        call_index=1,
+    ))
+    engine = ReplayEngine(repo, RuntimeContext(profile_name="default", test_item_code="DEFAULT_TEST"))
+    assert engine.replay("SA_01", "hash-read") == b"OK"
+
+
+def test_replay_returns_multiple_responses_for_same_request_in_order(tmp_path):
+    repo = Repository(Database(tmp_path / "recorder.db"))
+    repo.init_schema()
+    for response in [b"ACK", b"BUSINESS"]:
+        repo.insert_interaction(RecordEvent(
+            profile_name="default",
+            test_item_code="DEFAULT_TEST",
+            instrument_alias="SA_01",
+            instrument_type="SpectrumAnalyzer",
+            protocol=ProtocolType.SOCKET_RAW,
+            payload_format=PayloadFormat.BINARY,
+            variant_name="normal",
+            request_text="",
+            normalized_request="01",
+            request_hex="01",
+            request_hash="hash-bin",
+            request_bytes=b"\x01",
+            response_bytes=response,
+            call_index=1,
+        ))
+    engine = ReplayEngine(repo, RuntimeContext(profile_name="default", test_item_code="DEFAULT_TEST"))
+    assert engine.replay("SA_01", "hash-bin") == b"ACKBUSINESS"

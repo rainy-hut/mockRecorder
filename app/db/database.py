@@ -29,6 +29,18 @@ class Database:
 
     def _ensure_columns(self, conn: sqlite3.Connection) -> None:
         required = {
+            "tcp_session": {
+                "session_id": "TEXT",
+                "instrument_alias": "TEXT",
+                "client_host": "TEXT",
+                "client_port": "INTEGER",
+                "proxy_host": "TEXT",
+                "proxy_port": "INTEGER",
+                "real_host": "TEXT",
+                "real_port": "INTEGER",
+                "started_at": "TEXT",
+                "ended_at": "TEXT",
+            },
             "interaction_record": {
                 "product_name": "TEXT",
                 "process_station": "TEXT",
@@ -36,10 +48,21 @@ class Database:
                 "tu_name": "TEXT",
             },
             "stream_frame": {
+                "session_id": "TEXT",
+                "seq_no": "INTEGER",
                 "product_name": "TEXT",
                 "process_station": "TEXT",
                 "product_code": "TEXT",
                 "tu_name": "TEXT",
+                "raw_hex": "TEXT",
+                "raw_base64": "TEXT",
+                "text_preview": "TEXT",
+                "frame_type": "TEXT",
+                "parsed_command": "TEXT",
+                "command_key": "TEXT",
+                "peer_host": "TEXT",
+                "peer_port": "INTEGER",
+                "delay_ms_from_prev": "INTEGER DEFAULT 0",
             },
         }
         for table, columns in required.items():

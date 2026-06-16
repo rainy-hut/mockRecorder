@@ -14,3 +14,9 @@ def test_hex_text_normalizes_to_bytes():
     assert a.data == b.data
     assert a.hex == "01 03 00 00 00 02 C4 0B"
     assert a.hash == b.hash
+
+
+def test_hex_text_accepts_raw_binary_wire_payload():
+    payload = PayloadCodec.decode(b"\x01\x03\x00\x00\x00\x02\xC4\x0B", PayloadFormat.HEX_TEXT)
+    assert payload.data == b"\x01\x03\x00\x00\x00\x02\xC4\x0B"
+    assert payload.hex == "01 03 00 00 00 02 C4 0B"

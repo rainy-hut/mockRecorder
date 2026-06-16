@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import random
 import sqlite3
+import base64
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +70,33 @@ class Repository:
                 ),
             )
 
+    def create_tcp_session(
+        self,
+        session_id: str,
+        instrument_alias: str,
+        client_host: str,
+        client_port: int,
+        proxy_host: str,
+        proxy_port: int,
+        real_host: str,
+        real_port: int,
+    ) -> None:
+        now = utc_now_iso()
+        with self.database.connect() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO tcp_session(
+                    session_id, instrument_alias, client_host, client_port,
+                    proxy_host, proxy_port, real_host, real_port, started_at, ended_at
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                """,
+                (session_id, instrument_alias, client_host, client_port, proxy_host, proxy_port, real_host, real_port, now),
+            )
+
+    def finish_tcp_session(self, session_id: str) -> None:
+        with self.database.connect() as conn:
+            conn.execute("UPDATE tcp_session SET ended_at=? WHERE session_id=?", (utc_now_iso(), session_id))
+
     def insert_interaction(self, event: RecordEvent) -> int:
         now = utc_now_iso()
         with self.database.connect() as conn:
@@ -105,15 +133,77 @@ class Repository:
             INSERT INTO stream_frame(
                 interaction_id, product_name, process_station, product_code, tu_name,
                 profile_name, test_item_code, instrument_alias, direction, protocol, payload_format,
-                data_text, data_hex, data_blob, data_length, timestamp
-            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                data_text, data_hex, raw_hex, raw_base64, text_preview,
+                data_blob, data_length, timestamp
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 interaction_id, event.product_name, event.process_station, event.product_code, event.tu_name,
                 event.profile_name, event.test_item_code, event.instrument_alias, direction,
-                event.protocol, event.payload_format, text, hex_text, data, len(data or b""), utc_now_iso(),
+                event.protocol, event.payload_format, text, hex_text, hex_text,
+                base64.b64encode(data or b"").decode("ascii"), text, data, len(data or b""), utc_now_iso(),
             ),
         )
+
+    def insert_raw_stream_frame(
+        self,
+        *,
+        session_id: str,
+        seq_no: int,
+        instrument_alias: str,
+        direction: str,
+        protocol: str,
+        payload_format: str,
+        data: bytes,
+        product_name: str = "",
+        process_station: str = "",
+        product_code: str = "",
+        tu_name: str = "",
+        profile_name: str = "",
+        test_item_code: str = "",
+        peer_host: str = "",
+        peer_port: int = 0,
+        frame_type: str = "raw_recv",
+        parsed_command: str = "",
+        command_key: str = "",
+        text_preview: str = "",
+        delay_ms_from_prev: int = 0,
+    ) -> None:
+        hex_text = " ".join(f"{byte:02X}" for byte in data)
+        preview = text_preview if text_preview else self._text_preview(data)
+        with self.database.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO stream_frame(
+                    session_id, seq_no, product_name, process_station, product_code, tu_name,
+                    profile_name, test_item_code, instrument_alias, direction, protocol, payload_format,
+                    data_text, data_hex, raw_hex, raw_base64, text_preview, frame_type,
+                    parsed_command, command_key, peer_host, peer_port, delay_ms_from_prev,
+                    data_blob, data_length, timestamp
+                ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    session_id, seq_no, product_name, process_station, product_code, tu_name,
+                    profile_name, test_item_code, instrument_alias, direction, protocol, payload_format,
+                    preview, hex_text, hex_text, base64.b64encode(data).decode("ascii"), preview,
+                    frame_type, parsed_command, command_key, peer_host, peer_port, delay_ms_from_prev,
+                    data, len(data), utc_now_iso(),
+                ),
+            )
+
+    def list_stream_frames(self, session_id: str | None = None) -> list[sqlite3.Row]:
+        with self.database.connect() as conn:
+            if session_id:
+                return list(conn.execute("SELECT * FROM stream_frame WHERE session_id=? ORDER BY seq_no ASC, id ASC", (session_id,)))
+            return list(conn.execute("SELECT * FROM stream_frame ORDER BY id ASC"))
+
+    def _text_preview(self, data: bytes) -> str:
+        for encoding in ("utf-8", "gbk", "latin1"):
+            try:
+                return data.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return data.decode("utf-8", errors="replace")
 
     def insert_stream_frame(self, frame: dict[str, Any]) -> None:
         keys = ", ".join(frame.keys())

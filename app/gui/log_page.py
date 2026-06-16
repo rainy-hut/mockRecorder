@@ -1,4 +1,5 @@
 import html
+import logging
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QTextCursor
@@ -125,6 +126,12 @@ class LogPage(QWidget):
     def clear(self) -> None:
         self.raw_text = ""
         self.text.clear()
+        if not self.log_path.exists():
+            return
+        for handler in logging.getLogger().handlers:
+            if hasattr(handler, "flush"):
+                handler.flush()
+        self.log_path.write_text("", encoding="utf-8")
 
     def save(self) -> None:
         path, _ = QFileDialog.getSaveFileName(self, "导出日志", "app.log", "Log (*.log);;Text (*.txt)")

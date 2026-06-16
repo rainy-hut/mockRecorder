@@ -41,11 +41,19 @@ class ReplayEngine:
         if not rows:
             logger.warning("Replay miss instrument=%s hash=%s call=%s", instrument_alias, request_hash, call_index)
             return b""
+        if strategy == ReplayStrategy.BY_CALL_INDEX and len(rows) > 1:
+            response = b"".join(self._row_response(row) for row in rows)
+            logger.info("Replay multi-hit instrument=%s hash=%s call=%s records=%s", instrument_alias, request_hash, call_index, len(rows))
+            return response
         row = self._select_row(rows, strategy, context, instrument_alias, request_hash)
-        response = row["response_bytes"] if row["response_bytes"] is not None else (row["response_text"] or "").encode("utf-8")
-        if self.append_new_line and row["payload_format"] == "TEXT" and response and not response.endswith((b"\n", b"\r\n")):
+        response = self._row_response(row)
+        if self.append_new_line and row["response_bytes"] is None and row["payload_format"] == "TEXT" and response and not response.endswith((b"\n", b"\r\n")):
             response += b"\n"
         logger.info("Replay hit instrument=%s hash=%s call=%s record=%s", instrument_alias, request_hash, call_index, row["id"])
+        return response
+
+    def _row_response(self, row) -> bytes:
+        response = row["response_bytes"] if row["response_bytes"] is not None else (row["response_text"] or "").encode("utf-8")
         return response
 
     def _select_row(self, rows, strategy: str, context: dict[str, str], instrument_alias: str, request_hash: str):

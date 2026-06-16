@@ -36,6 +36,20 @@ CREATE TABLE IF NOT EXISTS instrument_config (
     updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS tcp_session (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL UNIQUE,
+    instrument_alias TEXT NOT NULL,
+    client_host TEXT,
+    client_port INTEGER,
+    proxy_host TEXT,
+    proxy_port INTEGER,
+    real_host TEXT,
+    real_port INTEGER,
+    started_at TEXT,
+    ended_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS interaction_record (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_name TEXT,
@@ -75,6 +89,8 @@ CREATE TABLE IF NOT EXISTS interaction_record (
 CREATE TABLE IF NOT EXISTS stream_frame (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     interaction_id INTEGER,
+    session_id TEXT,
+    seq_no INTEGER,
     product_name TEXT,
     process_station TEXT,
     product_code TEXT,
@@ -87,6 +103,15 @@ CREATE TABLE IF NOT EXISTS stream_frame (
     payload_format TEXT,
     data_text TEXT,
     data_hex TEXT,
+    raw_hex TEXT,
+    raw_base64 TEXT,
+    text_preview TEXT,
+    frame_type TEXT,
+    parsed_command TEXT,
+    command_key TEXT,
+    peer_host TEXT,
+    peer_port INTEGER,
+    delay_ms_from_prev INTEGER DEFAULT 0,
     data_blob BLOB,
     data_length INTEGER,
     timestamp TEXT,
@@ -110,3 +135,9 @@ ON interaction_record(profile_name, test_item_code, instrument_alias, request_ha
 
 CREATE INDEX IF NOT EXISTS idx_interaction_item
 ON interaction_record(test_item_code, instrument_alias);
+
+CREATE INDEX IF NOT EXISTS idx_stream_session_seq
+ON stream_frame(session_id, seq_no);
+
+CREATE INDEX IF NOT EXISTS idx_stream_command_key
+ON stream_frame(instrument_alias, direction, command_key);
