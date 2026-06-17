@@ -333,8 +333,7 @@ class TcpProxySession:
     ) -> None:
         if seq_no is None:
             seq_no = self._next_seq_no()
-        raw_hex = " ".join(f"{byte:02X}" for byte in data)
-        logger.info("%s %s", direction, raw_hex)
+        logger.info("%s %r", direction, data)
 
     def _peer_for_direction(self, direction: str) -> tuple[str, int]:
         if direction == "TX":
