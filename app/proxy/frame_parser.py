@@ -92,9 +92,21 @@ class StreamFrameParser:
         return control == 0
 
     def _parsed(self, data: bytes, frame_type: str) -> ParsedFrame:
-        preview = self._decode_preview(data)
+        preview = self._decode_preview(self._semantic_payload(data, frame_type))
         command = extract_command(preview)
         return ParsedFrame(data, frame_type, command, build_command_key(command, preview), preview)
+
+    def _semantic_payload(self, data: bytes, frame_type: str) -> bytes:
+        if frame_type != "f634_binary":
+            return data
+        payload = data[4:]
+        markers = [idx for idx in (payload.find(b"+++"), payload.find(b"%%")) if idx != -1]
+        if markers:
+            return payload[min(markers):]
+        for index, byte in enumerate(payload):
+            if 32 <= byte <= 126:
+                return payload[index:]
+        return payload
 
     def _decode_preview(self, data: bytes) -> str:
         for encoding in ("utf-8", "gbk", "latin1"):
@@ -116,7 +128,10 @@ def extract_command(text: str) -> str:
 def build_command_key(command: str, text: str) -> str:
     if not command:
         return ""
-    ignored = {"PWD", "RAND", "SID", "SESSIONID", "SESSION_ID", "HASH", "PUBLICKEY", "TIMESTAMP", "TIME"}
+    ignored = {
+        "PWD", "RAND", "SID", "SESSIONID", "SESSION_ID", "HASH", "PUBLICKEY", "TIMESTAMP", "TIME",
+        "RETCODE", "ACK", "KEY", "IP",
+    }
     parts = [command]
     for key, value in re.findall(r"\b([A-Z][A-Z0-9_]*)\s*=\s*\"?([^\",\s;]+)", text, flags=re.I):
         key_upper = key.upper()
@@ -124,3 +139,15 @@ def build_command_key(command: str, text: str) -> str:
             continue
         parts.append(f"{key_upper}={value}")
     return "|".join(parts)
+
+
+def command_key_from_bytes(data: bytes) -> str:
+    parser = StreamFrameParser()
+    frames = parser.feed(data)
+    if not frames:
+        frame = parser.flush_raw()
+        frames = [frame] if frame else []
+    for frame in frames:
+        if frame.command_key:
+            return frame.command_key
+    return ""

@@ -1,4 +1,4 @@
-from app.proxy.frame_parser import StreamFrameParser, build_command_key
+from app.proxy.frame_parser import StreamFrameParser, build_command_key, command_key_from_bytes
 
 
 def test_f634_frame_parser_waits_for_complete_frame():
@@ -28,3 +28,18 @@ def test_om_response_until_end_marker():
 def test_lgi_command_key_ignores_dynamic_fields():
     text = 'LGI: OP="admin", PWD="xxxx", DN=0, AUTHTYPE=PUBLICKEY, RAND="abc", SID=42;'
     assert build_command_key("LGI", text) == "LGI|OP=admin|DN=0|AUTHTYPE=PUBLICKEY"
+
+
+def test_f634_frame_extracts_inner_lgi_request_command_key():
+    payload = (
+        b"\x01\xff\xff\x00\x00\x00\x00"
+        b'LGI REQUEST: OP="admin", DN=0, TYPE=PUBLICKEY, HASHAL=SHA256, SID=0, RSAPadding=OAEP;'
+    )
+    frame = b"\xF6\x34" + len(payload).to_bytes(2, "big") + payload
+    assert command_key_from_bytes(frame) == "LGI|OP=admin|DN=0|TYPE=PUBLICKEY|HASHAL=SHA256|RSAPADDING=OAEP"
+
+
+def test_lgi_dynamic_pwd_rand_sid_share_command_key():
+    first = b'LGI: OP="admin", PWD="aaa", DN=0, AUTHTYPE=PUBLICKEY, RAND="111", SID=1;'
+    second = b'LGI: OP="admin", PWD="bbb", DN=0, AUTHTYPE=PUBLICKEY, RAND="222", SID=2;'
+    assert command_key_from_bytes(first) == command_key_from_bytes(second)

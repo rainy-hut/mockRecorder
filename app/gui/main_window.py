@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         self.repository.upsert_test_item(self.app_config.currentTestItemCode)
         self._build_ui()
         self.refresh_all()
-        logger.info("Application started")
+        logger.debug("Application started")
 
     def _build_ui(self) -> None:
         self.setWindowTitle(DISPLAY_NAME)
@@ -168,23 +168,26 @@ class MainWindow(QMainWindow):
         self.app_config.mode = mode
         self.runtime_context.set_mode(mode)
         self.config_manager.save(self.app_config)
-        logger.info("Mode changed to %s", mode)
+        logger.debug("Mode changed to %s", mode)
         self.refresh_dashboard()
 
     def reset_replay_counter(self) -> None:
         self.runtime_context.reset_replay_counter()
-        logger.info("Replay counters reset")
+        logger.debug("Replay counters reset")
 
     def save_context(
         self,
         product_name: str,
         process_station: str,
         product_code: str,
+        tu_name: str,
     ) -> None:
         self.app_config.currentProduct = product_name
         self.app_config.currentProcessStation = process_station
         self.app_config.currentProductCode = product_code
+        self.app_config.currentTuName = tu_name
         self.runtime_context.set_scene(product_name, process_station, product_code)
+        self.runtime_context.set_current_tu_name(tu_name)
         self.config_manager.save(self.app_config)
         self.setup_page.load(self.app_config)
         self.refresh_dashboard()
@@ -228,7 +231,7 @@ class MainWindow(QMainWindow):
         self.app_config.currentProcessStation = snapshot["process_station"]
         self.app_config.currentProductCode = snapshot["product_code"]
         self.app_config.currentTuName = snapshot["tu_name"]
-        logger.info("Runtime context updated by notice: %s", notice)
+        logger.debug("Runtime context updated by notice: %s", notice)
 
 
 def run_app() -> None:

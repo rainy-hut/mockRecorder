@@ -122,3 +122,30 @@ def test_replay_returns_multiple_responses_for_same_request_in_order(tmp_path):
         ))
     engine = ReplayEngine(repo, RuntimeContext(profile_name="default", test_item_code="DEFAULT_TEST"))
     assert engine.replay("SA_01", "hash-bin") == b"ACKBUSINESS"
+
+
+def test_replay_matches_stream_frames_by_command_key_and_returns_multiple_raw_responses(tmp_path):
+    repo = Repository(Database(tmp_path / "recorder.db"))
+    repo.init_schema()
+    request = b'LGI: OP="admin", PWD="recorded", DN=0, AUTHTYPE=PUBLICKEY, RAND="111", SID=1;'
+    replay_request = b'LGI: OP="admin", PWD="new", DN=0, AUTHTYPE=PUBLICKEY, RAND="222", SID=2;'
+    command_key = "LGI|OP=admin|DN=0|AUTHTYPE=PUBLICKEY"
+    for seq, direction, data, frame_type, key in [
+        (1, "TX", request, "text", command_key),
+        (2, "RX", b"\r\n", "raw_recv", ""),
+        (3, "RX", "+++ 0\r\nRETCODE = 0  执行成功\r\n---    END\r\n".encode("gbk"), "raw_recv", ""),
+    ]:
+        repo.insert_raw_stream_frame(
+            session_id="session-1",
+            seq_no=seq,
+            instrument_alias="SA_01",
+            direction=direction,
+            protocol=ProtocolType.SOCKET_RAW,
+            payload_format=PayloadFormat.BINARY,
+            data=data,
+            frame_type=frame_type,
+            command_key=key,
+        )
+    engine = ReplayEngine(repo, RuntimeContext(profile_name="default", test_item_code="DEFAULT_TEST"))
+    response = engine.replay("SA_01", "unused", request_bytes=replay_request)
+    assert response == b"\r\n" + "+++ 0\r\nRETCODE = 0  执行成功\r\n---    END\r\n".encode("gbk")

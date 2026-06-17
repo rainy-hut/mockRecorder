@@ -150,8 +150,10 @@ class TcpProxySession:
         context = self.runtime_context.snapshot()
         mode = context["mode"]
         if mode == Mode.REPLAY:
-            response = self.replay_engine.replay(self.instrument.alias, request_payload.hash)
+            self._log_raw_stream("TX", request)
+            response = self.replay_engine.replay(self.instrument.alias, request_payload.hash, request_bytes=request)
             if response:
+                self._log_raw_stream("RX", response)
                 self.client_socket.sendall(response)
             return
 
@@ -238,7 +240,7 @@ class TcpProxySession:
                 (self.instrument.realHost, self.instrument.realPort),
                 timeout=self.app_config.socketReadTimeoutMs / 1000,
             )
-            logger.info(
+            logger.debug(
                 "Connected real instrument %s %s:%s",
                 self.instrument.alias,
                 self.instrument.realHost,
@@ -297,9 +299,12 @@ class TcpProxySession:
             return
         context = self.runtime_context.snapshot()
         peer_host, peer_port = self._peer_for_direction(direction)
+        seq_no = self._next_seq_no()
+        if frame_type == "raw_recv":
+            self._log_raw_stream(direction, data, seq_no)
         self.repository.insert_raw_stream_frame(
             session_id=self.session_id,
-            seq_no=self._next_seq_no(),
+            seq_no=seq_no,
             instrument_alias=self.instrument.alias,
             direction=direction,
             protocol=self.instrument.protocol,
@@ -319,6 +324,17 @@ class TcpProxySession:
             text_preview=text_preview,
             delay_ms_from_prev=delay_ms,
         )
+
+    def _log_raw_stream(
+        self,
+        direction: str,
+        data: bytes,
+        seq_no: int | None = None,
+    ) -> None:
+        if seq_no is None:
+            seq_no = self._next_seq_no()
+        raw_hex = " ".join(f"{byte:02X}" for byte in data)
+        logger.info("%s %s", direction, raw_hex)
 
     def _peer_for_direction(self, direction: str) -> tuple[str, int]:
         if direction == "TX":

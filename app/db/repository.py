@@ -197,6 +197,70 @@ class Repository:
                 return list(conn.execute("SELECT * FROM stream_frame WHERE session_id=? ORDER BY seq_no ASC, id ASC", (session_id,)))
             return list(conn.execute("SELECT * FROM stream_frame ORDER BY id ASC"))
 
+    def find_response_frames_by_command_key(
+        self,
+        instrument_alias: str,
+        command_key: str,
+        product_name: str = "",
+        process_station: str = "",
+        product_code: str = "",
+        tu_name: str = "",
+    ) -> list[sqlite3.Row]:
+        if not command_key:
+            return []
+        scene_filters = []
+        scene_params: list[Any] = []
+        for key, value in [
+            ("product_name", product_name),
+            ("process_station", process_station),
+            ("product_code", product_code),
+            ("tu_name", tu_name),
+        ]:
+            if value:
+                scene_filters.append(f"{key}=?")
+                scene_params.append(value)
+        base_where = "instrument_alias=? AND direction='TX' AND command_key=?"
+        cases = [(base_where + (" AND " + " AND ".join(scene_filters) if scene_filters else ""), [instrument_alias, command_key, *scene_params])]
+        if scene_filters:
+            cases.append((base_where, [instrument_alias, command_key]))
+        with self.database.connect() as conn:
+            for where, params in cases:
+                tx_rows = list(conn.execute(
+                    f"SELECT * FROM stream_frame WHERE {where} ORDER BY id DESC LIMIT 20",
+                    params,
+                ))
+                for tx in tx_rows:
+                    next_tx = conn.execute(
+                        """
+                        SELECT MIN(seq_no) AS next_seq
+                        FROM stream_frame
+                        WHERE session_id=? AND direction='TX' AND seq_no>?
+                        """,
+                        (tx["session_id"], tx["seq_no"]),
+                    ).fetchone()
+                    next_seq = next_tx["next_seq"] if next_tx else None
+                    if next_seq is None:
+                        rows = list(conn.execute(
+                            """
+                            SELECT * FROM stream_frame
+                            WHERE session_id=? AND direction='RX' AND frame_type='raw_recv' AND seq_no>?
+                            ORDER BY seq_no ASC, id ASC
+                            """,
+                            (tx["session_id"], tx["seq_no"]),
+                        ))
+                    else:
+                        rows = list(conn.execute(
+                            """
+                            SELECT * FROM stream_frame
+                            WHERE session_id=? AND direction='RX' AND frame_type='raw_recv' AND seq_no>? AND seq_no<?
+                            ORDER BY seq_no ASC, id ASC
+                            """,
+                            (tx["session_id"], tx["seq_no"], next_seq),
+                        ))
+                    if rows:
+                        return rows
+        return []
+
     def _text_preview(self, data: bytes) -> str:
         for encoding in ("utf-8", "gbk", "latin1"):
             try:

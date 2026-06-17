@@ -54,7 +54,7 @@ class ContextControlServer:
             server.bind((self.host, self.port))
             server.listen()
             server.settimeout(0.5)
-            logger.info("Context control listening %s:%s", self.host, self.port)
+            logger.debug("Context control listening %s:%s", self.host, self.port)
             while not self._stop.is_set():
                 try:
                     client, addr = server.accept()
@@ -75,7 +75,7 @@ class ContextControlServer:
                 if self.on_context_changed:
                     self.on_context_changed(notice)
                 client.sendall(b"OK\n")
-                logger.info("Context notice from %s: %s", addr, notice)
+                logger.debug("Context notice from %s: %s", addr, notice)
             except Exception as exc:
                 logger.exception("Invalid context notice from %s", addr)
                 try:

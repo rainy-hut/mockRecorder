@@ -100,6 +100,9 @@ class LogPage(QWidget):
     def render(self) -> None:
         level = self.level_filter.currentText()
         keyword = self.search.text().strip().lower()
+        scrollbar = self.text.verticalScrollBar()
+        old_value = scrollbar.value()
+        was_at_bottom = old_value >= scrollbar.maximum() - 2
         lines = []
         for line in self.raw_text.splitlines():
             upper = line.upper()
@@ -120,8 +123,10 @@ class LogPage(QWidget):
                 color = "#93C5FD"
             lines.append(f'<span style="color:{color};">{html.escape(line)}</span>')
         self.text.setHtml("<br>".join(lines))
-        if not self.pause.isChecked():
+        if not self.pause.isChecked() and was_at_bottom:
             self.text.moveCursor(QTextCursor.End)
+        elif not was_at_bottom:
+            self.text.verticalScrollBar().setValue(min(old_value, self.text.verticalScrollBar().maximum()))
 
     def clear(self) -> None:
         self.raw_text = ""

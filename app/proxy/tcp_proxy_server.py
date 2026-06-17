@@ -55,7 +55,7 @@ class TcpProxyServer:
             server.bind((self.instrument.proxyHost, self.instrument.proxyPort))
             server.listen()
             server.settimeout(0.5)
-            logger.info("Proxy listening %s %s:%s", self.instrument.alias, self.instrument.proxyHost, self.instrument.proxyPort)
+            logger.debug("Proxy listening %s %s:%s", self.instrument.alias, self.instrument.proxyHost, self.instrument.proxyPort)
             while not self._stop.is_set():
                 try:
                     client, addr = server.accept()
@@ -63,6 +63,6 @@ class TcpProxyServer:
                     continue
                 except OSError:
                     break
-                logger.info("Client connected %s from %s", self.instrument.alias, addr)
+                logger.debug("Client connected %s from %s", self.instrument.alias, addr)
                 session = TcpProxySession(client, self.instrument, self.app_config, self.runtime_context, self.recorder_service, self.replay_engine)
                 threading.Thread(target=session.run, name=f"Session-{self.instrument.alias}", daemon=True).start()

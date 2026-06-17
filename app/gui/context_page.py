@@ -31,15 +31,19 @@ class ContextPage(QWidget):
         self.product = QLineEdit()
         self.process_station = QLineEdit()
         self.product_code = QLineEdit()
-        for col, (label_text, widget) in enumerate([
+        self.tu_name = QLineEdit()
+        for index, (label_text, widget) in enumerate([
             ("产品", self.product),
             ("工序工位", self.process_station),
             ("编码", self.product_code),
+            ("测试项", self.tu_name),
         ]):
+            row = (index // 2) * 2
+            col = index % 2
             label = QLabel(label_text)
             label.setObjectName("FieldLabel")
-            grid.addWidget(label, 0, col)
-            grid.addWidget(widget, 1, col)
+            grid.addWidget(label, row, col)
+            grid.addWidget(widget, row + 1, col)
         card_layout.addLayout(grid)
         layout.addWidget(card)
 
@@ -47,15 +51,18 @@ class ContextPage(QWidget):
         self.product.setText(config.currentProduct)
         self.process_station.setText(config.currentProcessStation)
         self.product_code.setText(config.currentProductCode)
+        self.tu_name.setText(config.currentTuName)
 
     def load_runtime_context(self, snapshot: dict[str, str]) -> None:
         self.product.setText(snapshot["product_name"])
         self.process_station.setText(snapshot["process_station"])
         self.product_code.setText(snapshot["product_code"])
+        self.tu_name.setText(snapshot["tu_name"])
 
     def save(self) -> None:
         self.parent_window.save_context(
             self.product.text().strip() or "MM",
             self.process_station.text().strip() or "FT1-MP1",
             self.product_code.text().strip() or "03020001",
+            self.tu_name.text().strip() or "UNSET",
         )

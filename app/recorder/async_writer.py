@@ -38,7 +38,7 @@ class AsyncWriter:
                 if event is None:
                     return
                 self.repository.insert_interaction(event)
-                logger.info("Recorded interaction %s %s call=%s", event.instrument_alias, event.request_hash, event.call_index)
+                logger.debug("Recorded interaction %s %s call=%s", event.instrument_alias, event.request_hash, event.call_index)
             except Exception:
                 logger.exception("SQLite write failed")
             finally:

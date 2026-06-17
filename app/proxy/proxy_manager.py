@@ -29,7 +29,7 @@ class ProxyManager:
                 continue
             if instrument.protocol == ProtocolType.VISA_INSTR_RESERVED:
                 msg = f"{instrument.alias}: VISA_INSTR_RESERVED 第一版不支持透明代理。请改用 VISA_SOCKET 或 SOCKET 方式。"
-                logger.warning(msg)
+                logger.debug(msg)
                 self.warnings.append(msg)
                 continue
             server = TcpProxyServer(instrument, self.app_config, self.runtime_context, self.recorder_service, self.replay_engine)
