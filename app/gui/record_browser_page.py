@@ -142,6 +142,7 @@ QHeaderView::section {
 
 class RecordBrowserPage(QWidget):
     COLUMNS = [
+        ("_selected", "选择"),
         ("product_name", "产品"),
         ("process_station", "工序工位"),
         ("product_code", "编码"),
@@ -322,6 +323,7 @@ class RecordBrowserPage(QWidget):
         self.table.setSelectionMode(QTableWidget.SingleSelection)
         self.table.verticalHeader().setVisible(False)
         self.table.itemSelectionChanged.connect(self.update_action_states)
+        self.table.itemChanged.connect(self.update_action_states)
         self.table.setMinimumHeight(220)
         self._apply_table_columns()
         layout.addWidget(self.table, 1)
@@ -385,11 +387,21 @@ class RecordBrowserPage(QWidget):
             self.table.setRowCount(0)
             self.table.clearSpans()
             if self.rows:
+                self.table.blockSignals(True)
                 for row_data in self.rows:
                     row = self.table.rowCount()
                     self.table.insertRow(row)
                     for col, (key, _) in enumerate(self.COLUMNS):
-                        self.table.setItem(row, col, QTableWidgetItem(str(row_data[key] if row_data[key] is not None else "")))
+                        if key == "_selected":
+                            item = QTableWidgetItem("")
+                            item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
+                            item.setCheckState(Qt.CheckState.Unchecked)
+                            item.setData(Qt.UserRole, int(row_data["id"]))
+                        else:
+                            item = QTableWidgetItem(str(row_data[key] if row_data[key] is not None else ""))
+                            item.setData(Qt.UserRole, int(row_data["id"]))
+                        self.table.setItem(row, col, item)
+                self.table.blockSignals(False)
             else:
                 self.table.setRowCount(1)
                 self.table.setSpan(0, 0, 1, len(self.COLUMNS))
@@ -441,6 +453,14 @@ class RecordBrowserPage(QWidget):
         if row < 0 or row >= len(self.rows):
             return None
         return dict(self.rows[row])
+
+    def checked_record_ids(self) -> list[int]:
+        ids = []
+        for row in range(len(self.rows)):
+            item = self.table.item(row, 0)
+            if item and item.checkState() == Qt.CheckState.Checked:
+                ids.append(int(item.data(Qt.UserRole)))
+        return ids
 
     def create_record(self) -> None:
         data = self._edit_dialog({
@@ -496,6 +516,16 @@ class RecordBrowserPage(QWidget):
         dialog.exec()
 
     def delete(self) -> None:
+        checked_ids = self.checked_record_ids()
+        if checked_ids:
+            count = len(checked_ids)
+            if QMessageBox.question(self, "确认删除", f"确认删除已勾选的 {count} 条录制数据？") != QMessageBox.Yes:
+                return
+            for interaction_id in checked_ids:
+                self.parent_window.repository.delete_interaction(interaction_id)
+            self.status_label.setText(f"状态：已删除 {count} 条")
+            self.refresh()
+            return
         record = self.current_record()
         if not record:
             return
@@ -524,8 +554,12 @@ class RecordBrowserPage(QWidget):
 
     def update_action_states(self) -> None:
         has_selection = self.current_record() is not None
-        for button in [self.edit_button, self.save_button, self.detail_button, self.delete_button]:
+        checked_ids = self.checked_record_ids() if hasattr(self, "table") else []
+        has_checked = bool(checked_ids)
+        for button in [self.edit_button, self.save_button, self.detail_button]:
             button.setEnabled(has_selection)
+        self.delete_button.setEnabled(has_selection or has_checked)
+        self.delete_button.setText(f"删除已选({len(checked_ids)})" if has_checked else "删除")
         limit = self.page_size.value() if hasattr(self, "page_size") else 100
         max_page = max(1, (self.total + limit - 1) // limit)
         if hasattr(self, "prev_button"):
@@ -589,6 +623,7 @@ class RecordBrowserPage(QWidget):
 
     def _apply_table_columns(self) -> None:
         widths = {
+            "_selected": 58,
             "product_name": 82,
             "process_station": 96,
             "product_code": 100,
