@@ -322,6 +322,7 @@ class RecordBrowserPage(QWidget):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setSelectionMode(QTableWidget.SingleSelection)
         self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().sectionClicked.connect(self.handle_header_clicked)
         self.table.itemSelectionChanged.connect(self.update_action_states)
         self.table.itemChanged.connect(self.update_action_states)
         self.table.setMinimumHeight(220)
@@ -462,6 +463,19 @@ class RecordBrowserPage(QWidget):
                 ids.append(int(item.data(Qt.UserRole)))
         return ids
 
+    def handle_header_clicked(self, section: int) -> None:
+        if section != 0 or not self.rows:
+            return
+        checked_count = len(self.checked_record_ids())
+        target_state = Qt.CheckState.Unchecked if checked_count == len(self.rows) else Qt.CheckState.Checked
+        self.table.blockSignals(True)
+        for row in range(len(self.rows)):
+            item = self.table.item(row, 0)
+            if item:
+                item.setCheckState(target_state)
+        self.table.blockSignals(False)
+        self.update_action_states()
+
     def create_record(self) -> None:
         data = self._edit_dialog({
             "product_name": self.parent_window.app_config.currentProduct,
@@ -560,6 +574,8 @@ class RecordBrowserPage(QWidget):
             button.setEnabled(has_selection)
         self.delete_button.setEnabled(has_selection or has_checked)
         self.delete_button.setText(f"删除已选({len(checked_ids)})" if has_checked else "删除")
+        if hasattr(self, "table"):
+            self.table.setHorizontalHeaderItem(0, QTableWidgetItem("取消" if len(checked_ids) == len(self.rows) and self.rows else "全选"))
         limit = self.page_size.value() if hasattr(self, "page_size") else 100
         max_page = max(1, (self.total + limit - 1) // limit)
         if hasattr(self, "prev_button"):
